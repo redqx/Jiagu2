@@ -1,4 +1,4 @@
-[中文文档](https://github.com/Frezrik/Jiagu/blob/main/README_CN.md)
+[中文文档](./README_CN.md)
 
 ---
 
