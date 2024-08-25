@@ -2,7 +2,23 @@
 
 ---
 
+原作者项目: [https://github.com/Frezrik/Jiagu](https://github.com/Frezrik/Jiagu)
+
+修改后的项目, 用于学习和研究
+
+项目结构
+
+```
+├── Android8.0_above_InMemoryDexClassLoader
+│   ├── app : 用于调试理解的项目(函数加载器)
+│   ├── jiagu : 加载器
+├── Android8.0_below_OpenMemory
+```
+
+
+
 # APK reinforcement
+
 * Support Android 5.0 and above (tested on 5.1, 7.1, 8.1, 10.0, 11.0 real machines)
 * Support multi-dex reinforcement
 * Adopt no-landing loading dex scheme
@@ -47,5 +63,4 @@
     * Android8.0 below use call libart's OpenMemory function to load dex in memory
     * Android8.0 and above use the InMemoryDexClassLoader provided by the system to load the dex in memory
 * replace shell application with application of app
-
 

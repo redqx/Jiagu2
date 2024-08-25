@@ -1,4 +1,0 @@
-include ':pack'
-include ':jiagu'
-include ':app'
-rootProject.name = "Jiagu"

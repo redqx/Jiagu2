@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="NONE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="c0bd4437-87db-453d-85c5-3d12675c7d0e" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/../JiaguTool/input/app-release.apk" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../app/build.gradle" beforeDir="false" afterPath="$PROJECT_DIR$/../app/build.gradle" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../bin/linux/apksigner" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../bin/linux/dx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../bin/linux/lib/apksigner.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../bin/linux/lib/dx.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../bin/linux/lib64/libc++.so" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../bin/linux/zipalign" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../bin/win/apksigner.bat" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../bin/win/dx.bat" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../bin/win/find_java.bat" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../bin/win/find_java32.exe" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../bin/win/find_java64.exe" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../bin/win/lib/apksigner.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../bin/win/lib/dx.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../bin/win/zipalign.exe" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../build.gradle" beforeDir="false" afterPath="$PROJECT_DIR$/../build.gradle" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../gradle/wrapper/gradle-wrapper.properties" beforeDir="false" afterPath="$PROJECT_DIR$/../gradle/wrapper/gradle-wrapper.properties" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../input/app-release.apk" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../pack/src/main/java/com/frezrik/jiagu/pack/Main.java" beforeDir="false" afterPath="$PROJECT_DIR$/../pack/src/main/java/com/frezrik/jiagu/pack/Main.java" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="ClangdSettings">
+    <option name="formatViaClangd" value="false" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/.." />
+  </component>
+  <component name="ProjectColorInfo"><![CDATA[{
+  "associatedIndex": 7
+}]]></component>
+  <component name="ProjectId" id="2l3rk54Eq5VuMEZshdPdoCfATPk" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.cidr.known.project.marker": "true",
+    "RunOnceActivity.readMode.enableVisualFormatting": "true",
+    "android.gradle.sync.needed": "true",
+    "cf.first.check.clang-format": "false",
+    "cidr.known.project.marker": "true",
+    "git-widget-placeholder": "main",
+    "kotlin-language-version-configured": "true"
+  }
+}]]></component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="c0bd4437-87db-453d-85c5-3d12675c7d0e" name="Changes" comment="" />
+      <created>1724419740966</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1724419740966</updated>
+    </task>
+    <servers />
+  </component>
+</project>

@@ -1,4 +1,20 @@
+原作者项目: [https://github.com/Frezrik/Jiagu](https://github.com/Frezrik/Jiagu)
+
+修改后的项目, 用于学习和研究
+
+项目结构
+
+```
+├── Android8.0_above_InMemoryDexClassLoader
+│   ├── app : 用于调试理解的项目(函数加载器)
+│   ├── jiagu : 加载器
+├── Android8.0_below_OpenMemory
+```
+
+
+
 # APK加固
+
 * 支持Android5.0及其以上版本(已在5.1、7.1、8.1、10.0、11.0真机测试)
 * 支持多dex加固
 * 采用不落地加载dex方案
