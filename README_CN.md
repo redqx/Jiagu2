@@ -6,8 +6,8 @@
 
 ```
 ├── Android8.0_above_InMemoryDexClassLoader
-│   ├── app : 用于调试理解的项目(函数加载器)
-│   ├── jiagu : 加载器
+│   ├── app : 用于调试理解的项目(含dex加载器)
+│   ├── jiagu : dex加载器
 ├── Android8.0_below_OpenMemory
 ```
 
