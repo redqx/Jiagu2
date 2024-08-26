@@ -89,7 +89,14 @@ std::unique_ptr<const void *> load23(void *artHandle, const char *base, size_t s
 
     const auto *dex_header = reinterpret_cast<const Header *>(base);
 
-    auto func23 = (org_artDexFileOpenMemory23) ndk_dlsym(artHandle, OpenMemory23);
+    auto func23 = (org_artDexFileOpenMemory23) ndk_dlsym(
+            artHandle, //Android7.0 x86_64还需要自己去找找这个函数....QAQ
+            "_ZN3art7DexFile10OpenMemoryEPKhmRKNSt3__112basic_stringIcNS3_11char_traitsIcEENS3_9allocatorIcEEEEjPNS_6MemMapEPKNS_10OatDexFileEPS9_"
+            );
+    if (func23 == nullptr){
+        LOGE("[-] not find load23 function");
+        return nullptr;
+    }
     value = func23((const unsigned char *) base,
                      size,
                      location,

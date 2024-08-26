@@ -86,6 +86,30 @@ static void init(JNIEnv *env, jobject cur_application)
     jobject ctx = CallObjectMethod(cur_application, "getBaseContext", "()Landroid/content/Context;").l;//getBaseContext是ContextWrapper的方法
     g_context = env->NewGlobalRef(ctx);
     g_sdk_version = GetStaticField("android/os/Build$VERSION", "SDK_INT", "I").i;
+
+    //Android8.0以下
+    jstring dex = env->NewStringUTF(".jiagu");
+    jobject fileDir = CallObjectMethod(cur_application, "getFilesDir", "()Ljava/io/File;").l;
+    jobject dataDir = CallObjectMethod(fileDir, "getParentFile", "()Ljava/io/File;").l;
+    jobject dexDir = NewClassInstance("java/io/File", "(Ljava/io/File;Ljava/lang/String;)V",
+                                      dataDir, dex);
+
+    CallObjectMethod(dexDir, "mkdir", "()Z");
+    jstring path = static_cast<jstring>(CallObjectMethod(dexDir, "getPath",
+                                                         "()Ljava/lang/String;").l);
+    // .jiagu目录的路径
+    g_jiagu_path = env->GetStringUTFChars(path, nullptr);
+
+    env->DeleteLocalRef(dex);
+    env->DeleteLocalRef(fileDir);
+    env->DeleteLocalRef(dataDir);
+    env->DeleteLocalRef(dexDir);
+    env->DeleteLocalRef(path);
+
+    char vm_path[128];
+    sprintf(vm_path, "%s/vm.dex", g_jiagu_path);
+    write_vm_dex(vm_path);
+
 }
 
 static jbyteArray getDex(JNIEnv *env, jobject application)
@@ -123,58 +147,70 @@ static jobject openmemory_load_dex(JNIEnv *env, void *art_handle, char *base, in
     jstring dex = env->NewStringUTF(dex_path);
     jstring odex = env->NewStringUTF(odex_path);
     LOGD("replace %s", dex_path);
-    jobject dexFile = CallStaticMethod("dalvik/system/DexFile", "loadDex",
-                                       "(Ljava/lang/String;Ljava/lang/String;I)Ldalvik/system/DexFile;",
-                                       dex, odex, 0).l;
+    jobject vm_dexFile = CallStaticMethod("dalvik/system/DexFile",
+                                          "loadDex",
+                                          "(Ljava/lang/String;Ljava/lang/String;I)Ldalvik/system/DexFile;",
+                                          dex, odex, 0).l;//这里返回的是DexFile
+    //调用DexFile.loadDex返回DexFie, DexFile的构造函数也会调用这个去返回DexFile
 
+    //DexFile.loadDex(dex_path, odex_path,0)
     jfieldID cookie_field;
     jclass DexFileClass = env->FindClass("dalvik/system/DexFile");
-    if (g_sdk_version < 23) {
+    if (g_sdk_version < 23)
+    {
         std::unique_ptr<std::vector<const void *>> dex_files(new std::vector<const void *>());
         dex_files.get()->push_back(load(g_sdk_version, art_handle, (char *)g_decrypt_base, (dex_size)));
 
         cookie_field = env->GetFieldID(DexFileClass, "mCookie", "J");
         jlong mCookie = static_cast<jlong>(reinterpret_cast<uintptr_t>(dex_files.release()));
-        env->SetLongField(dexFile, cookie_field, mCookie);
-    } else {
+        env->SetLongField(vm_dexFile, cookie_field, mCookie);
+    }
+    else
+    {
+        //获取原有的vm.dex的mCookie,然后修改mCookie指向我们新加载的dex, 刚才用DexFile.LoadDex加载的
         std::vector<std::unique_ptr<const void *>> dex_files;
         dex_files.push_back(std::move(load23(art_handle, (char *)g_decrypt_base, (dex_size))));
 
         cookie_field = env->GetFieldID(DexFileClass, "mCookie", "Ljava/lang/Object;");
-        jobject mCookie = env->GetObjectField(dexFile, cookie_field);
-
-        jlongArray long_array = env->NewLongArray(1 + dex_files.size());
+        jobject vmdex_mCookie = env->GetObjectField(vm_dexFile, cookie_field);
+        //DexFile.mCookie
+        jlongArray long_array = env->NewLongArray(1 + dex_files.size());//
         jboolean is_long_data_copied;
         jlong* mix_element = env->GetLongArrayElements(long_array, &is_long_data_copied);
 
         mix_element[0] = NULL;
-        for (size_t i = 0; i < dex_files.size(); ++i) {
-            if (g_sdk_version == 23) {
-                mix_element[i] = reinterpret_cast<uintptr_t>(dex_files[i].get());
-            } else {
-                mix_element[1 + i] = reinterpret_cast<uintptr_t>(dex_files[i].get());
+        for (size_t i = 0; i < dex_files.size(); ++i)
+        {//传递进来的就一个dex内容,dex_files.size()=1
+            if (g_sdk_version == 23)
+            {
+                mix_element[i] = reinterpret_cast<uintptr_t>(dex_files[i].get());//23还有什么特别之处么....mix_element[0] = art::DexFile::OpenMemory(...
+            }
+            else
+            {
+                mix_element[1 + i] = reinterpret_cast<uintptr_t>(dex_files[i].get());//mix_element[0] = NULL; mix_element[1] = art::DexFile::OpenMemory(...
             }
         }
 
-        // 更新mCookie
-        env->ReleaseLongArrayElements((jlongArray)mCookie, mix_element, 0);
+        // 更新mCookie, vm.dex -> mCookie指向了新的地方
+        env->ReleaseLongArrayElements((jlongArray)vmdex_mCookie, mix_element, 0);//?mCookie是指向数组?而不是单个的DexFile?
         if (env->ExceptionCheck())
         {
             LOGE("[-]g_sdk_int Update cookie failed");
             return NULL;
         }
 
-        for (auto& dex_file : dex_files) {
+        for (auto & dex_file : dex_files)
+        {
             dex_file.release();
         }
 
-        env->SetObjectField(dexFile, cookie_field, mCookie);
+        env->SetObjectField(vm_dexFile, cookie_field, vmdex_mCookie);//修改mCookie
     }
 
     env->DeleteLocalRef(dex);
     env->DeleteLocalRef(odex);
 
-    return dexFile;
+    return vm_dexFile;//返回一个DexFile??? ,而是DexPathList$Element?
 }
 
 static void make_dex_elements(JNIEnv *env, jobject classLoader, std::vector<jobject> dexFileobjs)
@@ -198,15 +234,23 @@ static void make_dex_elements(JNIEnv *env, jobject classLoader, std::vector<jobj
     // Get dexElement all values and add  add each value to the new array
     jclass ElementClass = env->FindClass("dalvik/system/DexPathList$Element"); // dalvik/system/DexPathList$Element
     jobjectArray new_dexElement = env->NewObjectArray(len + dexFileobjs.size(), ElementClass, NULL);
+
+    //原来的
     for (int i = 0; i < len; i++)
     {
         env->SetObjectArrayElement(new_dexElement, i, env->GetObjectArrayElement(dexElement, i));
     }
 
-
+    //新添加的
+    jmethodID ElementInit = env->GetMethodID(ElementClass,
+                                             "<init>",
+                                             "(Ljava/io/File;ZLjava/io/File;Ldalvik/system/DexFile;)V");
+    jboolean isDirectory = JNI_FALSE;
     for (int i = 0; i < dexFileobjs.size(); i++)
     {
-        env->SetObjectArrayElement(new_dexElement, len + i, dexFileobjs[i]);
+        //DexFile转成DexPathList$Element
+        jobject element_obj = env->NewObject(ElementClass, ElementInit, NULL, isDirectory, NULL,dexFileobjs[i]);
+        env->SetObjectArrayElement(new_dexElement, len + i, element_obj);
     }
 
     env->SetObjectField(pathList, dexElementsid, new_dexElement);
@@ -277,6 +321,14 @@ static void loadDex(JNIEnv *env, jobject cur_application)
 
 
     void *art_handle;
+    //android8.0以下
+    art_handle = ndk_dlopen("/system/lib64/libart.so", RTLD_NOW);//目前测试的是Android7.0 x86_64
+    if (!art_handle)
+    {
+        LOGE("[-]get %s handle failed:%s", LIB_ART_PATH, dlerror());
+        return;
+    }
+
     // 加载dex
     jobject classLoader = CallObjectMethod(g_context, "getClassLoader", "()Ljava/lang/ClassLoader;").l;
     std::vector<jobject> dexobjs;
@@ -289,72 +341,18 @@ static void loadDex(JNIEnv *env, jobject cur_application)
         jbyte* dex_data = env->GetByteArrayElements(innerArray, nullptr);
         jsize innerLength = env->GetArrayLength(innerArray);
 
-        //把每个dex的内容放进 vector dexBuffers
-        jobject dexBuffer = env->NewDirectByteBuffer(reinterpret_cast<char *>(dex_data), innerLength);
-        dexBuffers.push_back(dexBuffer);
-
+        jobject mCookie = openmemory_load_dex(env, art_handle, reinterpret_cast<char *>(dex_data), innerLength);
+        if (mCookie)
+        {
+            dexobjs.push_back(mCookie);//返回vm.dex的DexFile,只不过DexFile.mCookie指向的是我们自己加载的dex,而不是原来的vm.dex
+            //如果是InMemoryDexClassLoader
+            //这里放进去的是DexPathList$Element (static class Element),而不是DexFile
+            //在make_dex_elements中,会把DexFile转换为DexPathList$Element
+        }
     }
 
     jstring appname = env->NewStringUTF(app_name);
-
-    jclass ElementClass = env->FindClass("java/nio/ByteBuffer");
-    jobjectArray dexBufferArr = env->NewObjectArray(dexBuffers.size(), ElementClass, NULL);
-    for (int i = 0; i < dexBuffers.size(); i++)
-    {
-        //转存dex内容? 放进 jobjectArray dexBufferArr
-        env->SetObjectArrayElement(dexBufferArr, i, dexBuffers[i]);
-    }
-
-    jclass InMemoryDexClassLoaderClass = env->FindClass("dalvik/system/InMemoryDexClassLoader");
-    jmethodID InMemoryDexClassLoaderInit = env->GetMethodID(
-            InMemoryDexClassLoaderClass,
-            "<init>",
-            "([Ljava/nio/ByteBuffer;Ljava/lang/ClassLoader;)V");
-
-    //调用构造函数 public InMemoryDexClassLoader (ByteBuffer[] dexBuffers, ClassLoader parent)
-    // 这里已经完成了dex的自动加载....疑惑的是它并没有指定so的加载路径
-    jobject mm_InMemoryDexClassLoader = env->NewObject(
-            InMemoryDexClassLoaderClass,
-            InMemoryDexClassLoaderInit,
-            dexBufferArr,//成员得是ByteBuffer[],类似于byte[][]
-            classLoader);//并没有用确定so的加载路径
-
-//    jobject pathListObj = GetField(
-//            mm_InMemoryDexClassLoader,
-//            "pathList",
-//            "Ldalvik/system/DexPathList;").l;
-//    //在BaseDexClassLoader的构造函数中,会生成一个DexPathList
-
-    jobjectArray dexElements;
-    //替换DexPathList列表...
-
-    jclass list_jcs = env->FindClass("java/util/ArrayList");
-    jmethodID list_init = env->GetMethodID(list_jcs, "<init>", "()V");
-    jobject list_obj = env->NewObject(list_jcs, list_init);
-    dexElements = static_cast<jobjectArray>(CallStaticMethod(
-            "dalvik/system/DexPathList",
-            "makeInMemoryDexElements",
-            "([Ljava/nio/ByteBuffer;Ljava/util/List;)[Ldalvik/system/DexPathList$Element;",
-            dexBufferArr,
-            list_obj).l);
-    //public static Element[] makeInMemoryDexElements(..
-    /*
-     * makeInMemoryDexElements做的工作类似于 makeDexElements
-     * 在DexPathList的初始化中,就会调用makeDexElements. 也可以这么说InMemoryDexClassLoaderInit的调用已经生成了一个一模一样的Elements[]
-     * 所有这里又生成了一遍????大概DexPathList.dexElements[]是私有的,同时makeDexElements也是私有的.但是makeInMemoryDexElements是公开的
-     * */
-
-
-    for (int i = 0; i < env->GetArrayLength(dexElements); i++)
-    {
-        dexobjs.push_back(env->GetObjectArrayElement(dexElements, i));//感觉有点多此一举,dexElements本身就算数组了
-    }
-
-    env->DeleteLocalRef(ElementClass);
-    env->DeleteLocalRef(InMemoryDexClassLoaderClass);
-    env->DeleteLocalRef(mm_InMemoryDexClassLoader);
-    //env->DeleteLocalRef(pathListObj);
-
+    ndk_dlclose(art_handle);
 
     make_dex_elements(env, classLoader, dexobjs);//把自己的dexobjs添加到已经的dexElements里面
     hook_application(cur_application, appname);

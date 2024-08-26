@@ -319,11 +319,11 @@ static void loadDex(JNIEnv *env, jobject cur_application)
             dexBufferArr,//成员得是ByteBuffer[],类似于byte[][]
             classLoader);//并没有用确定so的加载路径
 
-//    jobject pathListObj = GetField(
-//            mm_InMemoryDexClassLoader,
-//            "pathList",
-//            "Ldalvik/system/DexPathList;").l;
-//    //在BaseDexClassLoader的构造函数中,会生成一个DexPathList
+    jobject pathListObj = GetField(
+            mm_InMemoryDexClassLoader,
+            "pathList",
+            "Ldalvik/system/DexPathList;").l;
+    //在BaseDexClassLoader的构造函数中,会生成一个DexPathList
 
     jobjectArray dexElements;
     //替换DexPathList列表...
@@ -331,19 +331,29 @@ static void loadDex(JNIEnv *env, jobject cur_application)
     jclass list_jcs = env->FindClass("java/util/ArrayList");
     jmethodID list_init = env->GetMethodID(list_jcs, "<init>", "()V");
     jobject list_obj = env->NewObject(list_jcs, list_init);
-    dexElements = static_cast<jobjectArray>(CallStaticMethod(
-            "dalvik/system/DexPathList",
-            "makeInMemoryDexElements",
-            "([Ljava/nio/ByteBuffer;Ljava/util/List;)[Ldalvik/system/DexPathList$Element;",
-            dexBufferArr,
-            list_obj).l);
+
+    if (g_sdk_version >= 29)
+    {
+        jclass list_jcs = env->FindClass("java/util/ArrayList");
+        jmethodID list_init = env->GetMethodID(list_jcs, "<init>", "()V");
+        jobject list_obj = env->NewObject(list_jcs, list_init);
+        dexElements = static_cast<jobjectArray>(CallStaticMethod("dalvik/system/DexPathList",
+                                                                 "makeInMemoryDexElements",
+                                                                 "([Ljava/nio/ByteBuffer;Ljava/util/List;)[Ldalvik/system/DexPathList$Element;",
+                                                                 dexBufferArr, list_obj).l);
+    }
+    else
+    {
+        //于是不用调用makeInMemoryDexElements,直接从InMemoryDexClassLoaderClass拿已经生成好的
+        dexElements = static_cast<jobjectArray>(GetField(pathListObj, "dexElements", "[Ldalvik/system/DexPathList$Element;").l);
+        //拿已经生成好的
+    }
     //public static Element[] makeInMemoryDexElements(..
     /*
      * makeInMemoryDexElements做的工作类似于 makeDexElements
      * 在DexPathList的初始化中,就会调用makeDexElements. 也可以这么说InMemoryDexClassLoaderInit的调用已经生成了一个一模一样的Elements[]
      * 所有这里又生成了一遍????大概DexPathList.dexElements[]是私有的,同时makeDexElements也是私有的.但是makeInMemoryDexElements是公开的
      * */
-
 
     for (int i = 0; i < env->GetArrayLength(dexElements); i++)
     {
@@ -353,7 +363,7 @@ static void loadDex(JNIEnv *env, jobject cur_application)
     env->DeleteLocalRef(ElementClass);
     env->DeleteLocalRef(InMemoryDexClassLoaderClass);
     env->DeleteLocalRef(mm_InMemoryDexClassLoader);
-    //env->DeleteLocalRef(pathListObj);
+    env->DeleteLocalRef(pathListObj);
 
 
     make_dex_elements(env, classLoader, dexobjs);//把自己的dexobjs添加到已经的dexElements里面
